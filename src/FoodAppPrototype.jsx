@@ -22,6 +22,7 @@ export default function FoodAppPrototype() {
   const [nutrition, setNutrition] = useState(null);
   const [intake, setIntake] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -39,6 +40,7 @@ export default function FoodAppPrototype() {
     }
 
     try {
+      setLoading(true);
       setError("");
       const response = await fetch(import.meta.env.VITE_API_URL + "/analyze", {
         method: "POST",
@@ -53,11 +55,20 @@ export default function FoodAppPrototype() {
 
       const data = await response.json();
       console.log("Svar fra backend:", data);
-      setIdentifiedFood(data.food);
-      setNutrition(data.nutrition);
+
+      if (!data.food || !data.nutrition) {
+        setError("Fikk ikke gyldig informasjon tilbake fra analysen.");
+        setIdentifiedFood("");
+        setNutrition(null);
+      } else {
+        setIdentifiedFood(data.food);
+        setNutrition(data.nutrition);
+      }
     } catch (error) {
       console.error("Feil ved analyse:", error);
       setError("Noe gikk galt under bildeanalysen. Prøv igjen.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,7 +81,7 @@ export default function FoodAppPrototype() {
     }
   };
 
-  const totalCalories = intake.reduce((sum, item) => sum + item.calories, 0);
+  const totalCalories = intake.reduce((sum, item) => sum + (parseFloat(item.calories) || 0), 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -80,8 +91,10 @@ export default function FoodAppPrototype() {
         <CardContent className="p-4 space-y-4">
           <Input type="file" accept="image/*" onChange={handleFileChange} />
           {image && <img src={image} alt="Matbilde" className="w-full max-w-sm" />}
-          <Button onClick={analyzeImage}>Analyser bilde</Button>
+          <Button onClick={analyzeImage}>{loading ? "Analyserer..." : "Analyser bilde"}</Button>
           {error && <p className="text-red-600 font-semibold">{error}</p>}
+
+          {!loading && !identifiedFood && !error && <p className="text-gray-500">Ingen analyse utført ennå.</p>}
 
           {identifiedFood && nutrition && (
             <div>
