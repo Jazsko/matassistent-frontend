@@ -1,7 +1,6 @@
 // Frontend: React-komponent med bildeopplasting og visning
 import React, { useState } from "react";
 
-
 const Button = (props) => (
   <button className="bg-blue-500 text-white py-2 px-4 rounded" {...props}>
     {props.children}
@@ -16,11 +15,13 @@ const Card = ({ children }) => (
   <div className="border rounded-xl shadow-md p-4 my-4">{children}</div>
 );
 const CardContent = ({ children }) => <div>{children}</div>;
+
 export default function FoodAppPrototype() {
   const [image, setImage] = useState(null);
   const [identifiedFood, setIdentifiedFood] = useState("");
   const [nutrition, setNutrition] = useState(null);
   const [intake, setIntake] = useState([]);
+  const [error, setError] = useState("");
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -32,14 +33,32 @@ export default function FoodAppPrototype() {
   };
 
   const analyzeImage = async () => {
-    const response = await fetch(process.env.REACT_APP_API_URL + "/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image })
-    });
-    const data = await response.json();
-    setIdentifiedFood(data.food);
-    setNutrition(data.nutrition);
+    if (!image) {
+      setError("Du må laste opp et bilde først.");
+      return;
+    }
+
+    try {
+      setError("");
+      const response = await fetch(process.env.REACT_APP_API_URL + "/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Serverfeil: ${text}`);
+      }
+
+      const data = await response.json();
+      console.log("Svar fra backend:", data);
+      setIdentifiedFood(data.food);
+      setNutrition(data.nutrition);
+    } catch (error) {
+      console.error("Feil ved analyse:", error);
+      setError("Noe gikk galt under bildeanalysen. Prøv igjen.");
+    }
   };
 
   const addToIntake = () => {
@@ -52,7 +71,7 @@ export default function FoodAppPrototype() {
   };
 
   const totalCalories = intake.reduce((sum, item) => sum + item.calories, 0);
-console.log("FoodAppPrototype loaded!");
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Matassistent</h1>
@@ -62,8 +81,9 @@ console.log("FoodAppPrototype loaded!");
           <Input type="file" accept="image/*" onChange={handleFileChange} />
           {image && <img src={image} alt="Matbilde" className="w-full max-w-sm" />}
           <Button onClick={analyzeImage}>Analyser bilde</Button>
+          {error && <p className="text-red-600 font-semibold">{error}</p>}
 
-          {identifiedFood && (
+          {identifiedFood && nutrition && (
             <div>
               <h2 className="text-xl font-semibold">Identifisert: {identifiedFood}</h2>
               <p><strong>Kalorier:</strong> {nutrition.calories} kcal</p>
