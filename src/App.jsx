@@ -1,11 +1,12 @@
 import React from "react";
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import FoodAppPrototype from "./FoodAppPrototype";
+import FoodTextAnalyzer from "./FoodTextAnalyzer";
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(
-  <React.StrictMode>
-    <FoodAppPrototype />
-  </React.StrictMode>
-);
+function App() {
+  return (
+    <div className="min-h-screen bg-white text-gray-800 p-4">
+      <FoodTextAnalyzer />
+    </div>
+  );
+}
+
+export default App;
