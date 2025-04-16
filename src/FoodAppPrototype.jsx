@@ -23,25 +23,34 @@ export default function FoodAppPrototype() {
   const [intake, setIntake] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [log, setLog] = useState([]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setImage(reader.result);
+      reader.onloadend = () => {
+        setImage(reader.result);
+        setLog((prev) => [...prev, "✅ Bilde lastet opp"]);
+      };
       reader.readAsDataURL(file);
     }
   };
 
   const analyzeImage = async () => {
+    setLog((prev) => [...prev, "🔍 Knapp trykket"]);
+
     if (!image) {
       setError("Du må laste opp et bilde først.");
+      setLog((prev) => [...prev, "❌ Ingen bilde funnet"]);
       return;
     }
 
     try {
       setLoading(true);
       setError("");
+      setLog((prev) => [...prev, "📤 Sender bilde til backend..."]);
+
       const response = await fetch(import.meta.env.VITE_API_URL + "/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,6 +65,8 @@ export default function FoodAppPrototype() {
       const data = await response.json();
       console.log("Svar fra backend:", data);
 
+      setLog((prev) => [...prev, "✅ Svar mottatt", JSON.stringify(data, null, 2)]);
+
       if (!data.food || !data.nutrition) {
         setError("Fikk ikke gyldig informasjon tilbake fra analysen.");
         setIdentifiedFood("");
@@ -67,6 +78,7 @@ export default function FoodAppPrototype() {
     } catch (error) {
       console.error("Feil ved analyse:", error);
       setError("Noe gikk galt under bildeanalysen. Prøv igjen.");
+      setLog((prev) => [...prev, `❌ Feil: ${error.message}`]);
     } finally {
       setLoading(false);
     }
@@ -127,6 +139,15 @@ export default function FoodAppPrototype() {
             </ul>
           )}
           <p className="mt-2 font-bold">Totalt: {totalCalories} kcal</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="text-sm text-gray-600 bg-gray-50">
+          <h2 className="text-md font-semibold">Debug-logg:</h2>
+          <ul className="list-disc list-inside whitespace-pre-wrap">
+            {log.map((line, i) => <li key={i}>{line}</li>)}
+          </ul>
         </CardContent>
       </Card>
     </div>
