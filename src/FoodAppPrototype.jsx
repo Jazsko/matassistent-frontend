@@ -52,7 +52,7 @@ export default function FoodAppPrototype() {
   };
 
   const totalCalories = intake.reduce((sum, item) => sum + item.calories, 0);
-
+console.log("FoodAppPrototype loaded!");
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Matassistent</h1>
