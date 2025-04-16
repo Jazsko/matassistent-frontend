@@ -1,7 +1,7 @@
 // Frontend: React-komponent med bildeopplasting og visning
 import React, { useState } from "react";
 
-import { Camera } from "lucide-react";
+
 const Button = (props) => (
   <button className="bg-blue-500 text-white py-2 px-4 rounded" {...props}>
     {props.children}
