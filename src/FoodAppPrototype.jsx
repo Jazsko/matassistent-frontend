@@ -1,10 +1,21 @@
 // Frontend: React-komponent med bildeopplasting og visning
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Camera } from "lucide-react";
 
+import { Camera } from "lucide-react";
+const Button = (props) => (
+  <button className="bg-blue-500 text-white py-2 px-4 rounded" {...props}>
+    {props.children}
+  </button>
+);
+
+const Input = (props) => (
+  <input className="border border-gray-300 rounded px-3 py-2 w-full" {...props} />
+);
+
+const Card = ({ children }) => (
+  <div className="border rounded-xl shadow-md p-4 my-4">{children}</div>
+);
+const CardContent = ({ children }) => <div>{children}</div>;
 export default function FoodAppPrototype() {
   const [image, setImage] = useState(null);
   const [identifiedFood, setIdentifiedFood] = useState("");
