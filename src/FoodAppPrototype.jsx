@@ -61,7 +61,7 @@ console.log("FoodAppPrototype loaded!");
         <CardContent className="p-4 space-y-4">
           <Input type="file" accept="image/*" onChange={handleFileChange} />
           {image && <img src={image} alt="Matbilde" className="w-full max-w-sm" />}
-          <Button onClick={analyzeImage}><Camera className="mr-2" />Analyser bilde</Button>
+          <Button onClick={analyzeImage}>Analyser bilde</Button>
 
           {identifiedFood && (
             <div>
