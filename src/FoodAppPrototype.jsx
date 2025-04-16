@@ -1,4 +1,3 @@
-// Frontend: React-komponent med bildeopplasting og visning
 import React, { useState } from "react";
 
 const Button = (props) => (
@@ -21,67 +20,37 @@ export default function FoodAppPrototype() {
   const [identifiedFood, setIdentifiedFood] = useState("");
   const [nutrition, setNutrition] = useState(null);
   const [intake, setIntake] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [log, setLog] = useState([]);
+  const [textInput, setTextInput] = useState("");
+  const [textResult, setTextResult] = useState("");
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-        setLog((prev) => [...prev, "✅ Bilde lastet opp"]);
-      };
+      reader.onloadend = () => setImage(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
   const analyzeImage = async () => {
-    setLog((prev) => [...prev, "🔍 Knapp trykket"]);
+    const response = await fetch("https://matassistent.onrender.com/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image }),
+    });
+    const data = await response.json();
+    setIdentifiedFood(data.food);
+    setNutrition(data.nutrition);
+  };
 
-    if (!image) {
-      setError("Du må laste opp et bilde først.");
-      setLog((prev) => [...prev, "❌ Ingen bilde funnet"]);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError("");
-      setLog((prev) => [...prev, "📤 Sender bilde til backend..."]);
-
-      const response = await fetch(import.meta.env.VITE_API_URL + "/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image })
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Serverfeil: ${text}`);
-      }
-
-      const data = await response.json();
-      console.log("Svar fra backend:", data);
-
-      setLog((prev) => [...prev, "✅ Svar mottatt", JSON.stringify(data, null, 2)]);
-
-      if (!data.food || !data.nutrition) {
-        setError("Fikk ikke gyldig informasjon tilbake fra analysen.");
-        setIdentifiedFood("");
-        setNutrition(null);
-      } else {
-        setIdentifiedFood(data.food);
-        setNutrition(data.nutrition);
-      }
-    } catch (error) {
-      console.error("Feil ved analyse:", error);
-      setError("Noe gikk galt under bildeanalysen. Prøv igjen.");
-      setLog((prev) => [...prev, `❌ Feil: ${error.message}`]);
-    } finally {
-      setLoading(false);
-    }
+  const analyzeText = async () => {
+    const response = await fetch("https://matassistent.onrender.com/text-analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: textInput }),
+    });
+    const data = await response.json();
+    setTextResult(data.result);
   };
 
   const addToIntake = () => {
@@ -93,23 +62,21 @@ export default function FoodAppPrototype() {
     }
   };
 
-  const totalCalories = intake.reduce((sum, item) => sum + (parseFloat(item.calories) || 0), 0);
+  const totalCalories = intake.reduce((sum, item) => sum + item.calories, 0);
 
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Matassistent</h1>
 
       <Card>
-        <CardContent className="p-4 space-y-4">
+        <CardContent className="space-y-4">
+          <h2 className="font-semibold text-lg">📷 Bildeanalyse</h2>
           <Input type="file" accept="image/*" onChange={handleFileChange} />
           {image && <img src={image} alt="Matbilde" className="w-full max-w-sm" />}
-          <Button onClick={analyzeImage}>{loading ? "Analyserer..." : "Analyser bilde"}</Button>
-          {error && <p className="text-red-600 font-semibold">{error}</p>}
+          <Button onClick={analyzeImage}>Analyser bilde</Button>
 
-          {!loading && !identifiedFood && !error && <p className="text-gray-500">Ingen analyse utført ennå.</p>}
-
-          {identifiedFood && nutrition && (
-            <div>
+          {identifiedFood && (
+            <div className="pt-4">
               <h2 className="text-xl font-semibold">Identifisert: {identifiedFood}</h2>
               <p><strong>Kalorier:</strong> {nutrition.calories} kcal</p>
               <p><strong>Proteiner:</strong> {nutrition.protein}</p>
@@ -129,8 +96,28 @@ export default function FoodAppPrototype() {
       </Card>
 
       <Card>
+        <CardContent className="space-y-4">
+          <h2 className="font-semibold text-lg">✍️ Tekstanalyse</h2>
+          <Input
+            type="text"
+            placeholder="Skriv inn matvare, f.eks. Banan"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+          />
+          <Button onClick={analyzeText}>Analyser matvare</Button>
+
+          {textResult && (
+            <div className="pt-4 whitespace-pre-wrap">
+              <h3 className="font-semibold">Resultat:</h3>
+              <p>{textResult}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardContent className="p-4">
-          <h2 className="text-xl font-semibold">Dagens inntak</h2>
+          <h2 className="text-xl font-semibold">🗒️ Dagens inntak</h2>
           {intake.length === 0 ? <p>Ingen mat registrert ennå.</p> : (
             <ul className="space-y-1">
               {intake.map((item, idx) => (
@@ -139,15 +126,6 @@ export default function FoodAppPrototype() {
             </ul>
           )}
           <p className="mt-2 font-bold">Totalt: {totalCalories} kcal</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="text-sm text-gray-600 bg-gray-50">
-          <h2 className="text-md font-semibold">Debug-logg:</h2>
-          <ul className="list-disc list-inside whitespace-pre-wrap">
-            {log.map((line, i) => <li key={i}>{line}</li>)}
-          </ul>
         </CardContent>
       </Card>
     </div>
